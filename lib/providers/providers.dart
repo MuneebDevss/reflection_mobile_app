@@ -4,21 +4,31 @@ import 'package:reflection_frontend/features/goal_details/state/goal_details_sta
 import 'package:reflection_frontend/features/goals/state/my_goals_state.dart';
 import 'package:reflection_frontend/features/task_history/state/task_history_state.dart';
 import '../data/services/goal_api_service.dart';
+import '../data/services/auth_service.dart';
 import '../data/repositories/goal_repository.dart';
 import '../data/repositories/goal_session_repository.dart';
 import '../features/goals/viewmodel/my_goals_viewmodel.dart';
 import '../features/goal_creation/viewmodel/goal_creation_viewmodel.dart';
 import '../features/goal_details/viewmodel/goal_details_viewmodel.dart';
 import '../features/task_history/viewmodel/task_history_viewmodel.dart';
+import '../features/auth/viewmodel/auth_viewmodel.dart';
+import '../features/auth/state/auth_state.dart';
 import '../data/models/goal.dart';
 
 // ============================================================================
 // SERVICE PROVIDERS
 // ============================================================================
 
+/// Provider for the Auth Service (singleton)
+final authServiceProvider = Provider<AuthService>((ref) {
+  return AuthService();
+});
+
 /// Provider for the Goal API Service (singleton)
+/// Now includes auth service for JWT token support
 final goalApiServiceProvider = Provider<GoalApiService>((ref) {
-  return GoalApiService();
+  final authService = ref.watch(authServiceProvider);
+  return GoalApiService(authService: authService);
 });
 
 // ============================================================================
@@ -40,6 +50,14 @@ final goalSessionRepositoryProvider = Provider<GoalSessionRepository>((ref) {
 // ============================================================================
 // VIEWMODEL PROVIDERS
 // ============================================================================
+
+/// Provider for Auth ViewModel
+final authViewModelProvider = StateNotifierProvider<AuthViewModel, AuthState>((
+  ref,
+) {
+  final authService = ref.watch(authServiceProvider);
+  return AuthViewModel(authService);
+});
 
 /// Provider for My Goals screen ViewModel
 /// Pass userId as parameter

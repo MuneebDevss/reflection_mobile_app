@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:reflection_frontend/data/models/chat_message.dart';
 
 class ChatMessageBubble extends StatefulWidget {
   final ChatMessage message;
   final int index;
+  final Function(String)? onSuggestionTap;
 
   const ChatMessageBubble({
     Key? key,
     required this.message,
     required this.index,
+    this.onSuggestionTap,
   }) : super(key: key);
 
   @override
@@ -55,6 +58,25 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble>
     super.dispose();
   }
 
+  void _copyToClipboard() {
+    Clipboard.setData(ClipboardData(text: widget.message.text));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.white, size: 20),
+            SizedBox(width: 8),
+            Text('Message copied to clipboard'),
+          ],
+        ),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.green.shade600,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return FadeTransition(
@@ -74,51 +96,72 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble>
                 const SizedBox(width: 8),
               ],
               Flexible(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    gradient: widget.message.isSystem
-                        ? LinearGradient(
-                            colors: [
-                              Colors.purple.shade50,
-                              Colors.blue.shade50,
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          )
-                        : null,
-                    color: widget.message.isUser
-                        ? Theme.of(context).primaryColor
-                        : null,
-                    borderRadius: BorderRadius.only(
-                      topLeft: const Radius.circular(18),
-                      topRight: const Radius.circular(18),
-                      bottomLeft: Radius.circular(
-                        widget.message.isSystem ? 4 : 18,
-                      ),
-                      bottomRight: Radius.circular(
-                        widget.message.isUser ? 4 : 18,
-                      ),
+                child: GestureDetector(
+                  onLongPress: _copyToClipboard,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Text(
-                    widget.message.text,
-                    style: TextStyle(
+                    decoration: BoxDecoration(
+                      gradient: widget.message.isSystem
+                          ? LinearGradient(
+                              colors: [
+                                Colors.purple.shade50,
+                                Colors.blue.shade50,
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            )
+                          : null,
                       color: widget.message.isUser
-                          ? Colors.white
-                          : Colors.black87,
-                      fontSize: 16,
-                      height: 1.4,
+                          ? Theme.of(context).primaryColor
+                          : null,
+                      borderRadius: BorderRadius.only(
+                        topLeft: const Radius.circular(18),
+                        topRight: const Radius.circular(18),
+                        bottomLeft: Radius.circular(
+                          widget.message.isSystem ? 4 : 18,
+                        ),
+                        bottomRight: Radius.circular(
+                          widget.message.isUser ? 4 : 18,
+                        ),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.message.text,
+                          style: TextStyle(
+                            color: widget.message.isUser
+                                ? Colors.white
+                                : Colors.black87,
+                            fontSize: 16,
+                            height: 1.4,
+                          ),
+                        ),
+                        if (widget.message.hasSuggestions) ...[
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: widget.message.suggestions!
+                                .map(
+                                  (suggestion) =>
+                                      _buildSuggestionChip(suggestion),
+                                )
+                                .toList(),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 ),
@@ -156,6 +199,41 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble>
           widget.message.isSystem ? Icons.auto_awesome : Icons.person,
           size: 18,
           color: Colors.white,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSuggestionChip(String suggestion) {
+    return InkWell(
+      onTap: widget.onSuggestionTap != null
+          ? () => widget.onSuggestionTap!(suggestion)
+          : null,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: Theme.of(context).primaryColor.withOpacity(0.3),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Text(
+          suggestion,
+          style: TextStyle(
+            color: Theme.of(context).primaryColor,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ),
     );
