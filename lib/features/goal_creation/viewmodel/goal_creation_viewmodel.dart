@@ -23,11 +23,15 @@ class GoalCreationViewModel extends StateNotifier<GoalCreationState> {
     state = state.copyWith(inputEnabled: true);
   }
 
-  void _addSystemMessage(String text) {
+  void _addSystemMessage(String text, {List<String>? suggestions}) {
     state = state.copyWith(isTyping: true);
 
     Future.delayed(AppDurations.typingDelay, () {
-      final newMessage = ChatMessage(text: text, sender: MessageSender.system);
+      final newMessage = ChatMessage(
+        text: text,
+        sender: MessageSender.system,
+        suggestions: suggestions,
+      );
       state = state.copyWith(
         messages: [...state.messages, newMessage],
         isTyping: false,
@@ -104,14 +108,12 @@ class GoalCreationViewModel extends StateNotifier<GoalCreationState> {
         await _completeSession();
       } else {
         state = state.copyWith(currentQuestion: response.question);
-        _addSystemMessage(response.question!.question);
-
-        if (response.question!.options.isNotEmpty) {
-          await Future.delayed(AppDurations.normal);
-          _addSystemMessage(
-            "You can type your own answer or choose from these suggestions:",
-          );
-        }
+        _addSystemMessage(
+          response.question!.question,
+          suggestions: response.question!.options.isNotEmpty
+              ? response.question!.options
+              : null,
+        );
 
         state = state.copyWith(inputEnabled: true);
       }

@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import '../models/goal.dart';
 import '../models/goal_session.dart';
 import '../models/daily_task.dart';
+import 'auth_service.dart';
 
 class ApiException implements Exception {
   final String message;
@@ -17,14 +18,37 @@ class ApiException implements Exception {
 
 class GoalApiService {
   // Update this to match your backend URL
-  static const String baseUrl =
-      'https://overrigorous-laticia-authigenic.ngrok-free.dev';
+  static const String baseUrl = 'https://reflection-backend-r7uw.onrender.com';
+
+  final AuthService? authService;
+
+  GoalApiService({this.authService});
+
+  /// Get headers with optional JWT token for authenticated requests
+  Future<Map<String, String>> _getHeaders({bool requiresAuth = false}) async {
+    final headers = {'Content-Type': 'application/json'};
+
+    if (requiresAuth && authService != null) {
+      try {
+        final token = await authService!.getToken();
+        if (token != null && token.isNotEmpty) {
+          headers['Authorization'] = 'Bearer $token';
+        }
+      } catch (e) {
+        // If token retrieval fails, continue without auth header
+        // The API will return 401 if authorization is required
+      }
+    }
+
+    return headers;
+  }
 
   Future<Goal> createGoal(CreateGoalRequest request) async {
     try {
+      final headers = await _getHeaders(requiresAuth: true);
       final response = await http.post(
         Uri.parse('$baseUrl/goals'),
-        headers: {'Content-Type': 'application/json'},
+        headers: headers,
         body: jsonEncode(request.toJson()),
       );
 
@@ -47,9 +71,10 @@ class GoalApiService {
 
   Future<List<Goal>> getGoals(String userId) async {
     try {
+      final headers = await _getHeaders(requiresAuth: true);
       final response = await http.get(
         Uri.parse('$baseUrl/goals?userId=$userId'),
-        headers: {'Content-Type': 'application/json'},
+        headers: headers,
       );
 
       if (response.statusCode == 200) {
@@ -71,9 +96,10 @@ class GoalApiService {
 
   Future<Goal> getGoal(String id) async {
     try {
+      final headers = await _getHeaders(requiresAuth: true);
       final response = await http.get(
         Uri.parse('$baseUrl/goals/$id'),
-        headers: {'Content-Type': 'application/json'},
+        headers: headers,
       );
 
       if (response.statusCode == 200) {
@@ -99,9 +125,10 @@ class GoalApiService {
     required String rawGoalText,
   }) async {
     try {
+      final headers = await _getHeaders(requiresAuth: true);
       final response = await http.post(
         Uri.parse('$baseUrl/goal-sessions'),
-        headers: {'Content-Type': 'application/json'},
+        headers: headers,
         body: jsonEncode({'userId': userId, 'rawGoalText': rawGoalText}),
       );
 
@@ -124,9 +151,10 @@ class GoalApiService {
 
   Future<NextQuestionResponse> getNextQuestion(String sessionId) async {
     try {
+      final headers = await _getHeaders(requiresAuth: true);
       final response = await http.get(
         Uri.parse('$baseUrl/goal-sessions/$sessionId/next-question'),
-        headers: {'Content-Type': 'application/json'},
+        headers: headers,
       );
 
       if (response.statusCode == 200) {
@@ -151,9 +179,10 @@ class GoalApiService {
     required String answerText,
   }) async {
     try {
+      final headers = await _getHeaders(requiresAuth: true);
       final response = await http.post(
         Uri.parse('$baseUrl/goal-questions/$questionId/answer'),
-        headers: {'Content-Type': 'application/json'},
+        headers: headers,
         body: jsonEncode({'answerText': answerText}),
       );
 
@@ -173,9 +202,10 @@ class GoalApiService {
 
   Future<GoalSession> completeSession(String sessionId) async {
     try {
+      final headers = await _getHeaders(requiresAuth: true);
       final response = await http.post(
         Uri.parse('$baseUrl/goal-sessions/$sessionId/complete'),
-        headers: {'Content-Type': 'application/json'},
+        headers: headers,
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -198,9 +228,10 @@ class GoalApiService {
   // Daily Task endpoints
   Future<List<DailyTask>> getTodayTasks(String goalId) async {
     try {
+      final headers = await _getHeaders(requiresAuth: true);
       final response = await http.get(
         Uri.parse('$baseUrl/goals/$goalId/today-tasks'),
-        headers: {'Content-Type': 'application/json'},
+        headers: headers,
       );
 
       if (response.statusCode == 200) {
@@ -222,9 +253,10 @@ class GoalApiService {
 
   Future<List<DailyTask>> generateTasks(String goalId) async {
     try {
+      final headers = await _getHeaders(requiresAuth: true);
       final response = await http.post(
         Uri.parse('$baseUrl/goals/$goalId/generate-tasks'),
-        headers: {'Content-Type': 'application/json'},
+        headers: headers,
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -246,9 +278,10 @@ class GoalApiService {
 
   Future<DailyTask> updateTaskStatus(String taskId, String status) async {
     try {
+      final headers = await _getHeaders(requiresAuth: true);
       final response = await http.patch(
         Uri.parse('$baseUrl/goals/tasks/$taskId/status'),
-        headers: {'Content-Type': 'application/json'},
+        headers: headers,
         body: jsonEncode({'status': status}),
       );
 
@@ -276,7 +309,6 @@ class GoalApiService {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/goals/$goalId/previous-tasks?period=$period'),
-        headers: {'Content-Type': 'application/json'},
       );
 
       if (response.statusCode == 200) {

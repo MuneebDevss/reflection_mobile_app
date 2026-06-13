@@ -10,6 +10,16 @@ class TaskCard extends StatelessWidget {
 
   const TaskCard({super.key, required this.task, required this.onToggle});
 
+  void _showTaskDetails(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) =>
+          TaskDetailsBottomSheet(task: task, onToggle: onToggle),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isPending = task.isPending;
@@ -46,7 +56,7 @@ class TaskCard extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(AppSizes.radiusL),
-          onTap: isPending ? onToggle : null,
+          onTap: () => _showTaskDetails(context),
           child: Padding(
             padding: const EdgeInsets.all(AppSizes.paddingL),
             child: Row(
@@ -109,6 +119,8 @@ class TaskCard extends StatelessWidget {
                         const SizedBox(height: AppSizes.spaceXS),
                         Text(
                           task.description!,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontSize: AppSizes.fontM,
                             color: AppColors.textLight,
@@ -168,6 +180,260 @@ class TaskCard extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class TaskDetailsBottomSheet extends StatelessWidget {
+  final DailyTask task;
+  final VoidCallback onToggle;
+
+  const TaskDetailsBottomSheet({
+    super.key,
+    required this.task,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isPending = task.isPending;
+    final isCompleted = task.isCompleted;
+    final isSkipped = task.isSkipped;
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.cardBackground,
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppSizes.radiusXL),
+        ),
+      ),
+      child: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Container(
+              margin: const EdgeInsets.only(top: AppSizes.paddingM),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.divider,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+
+            // Content
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(AppSizes.paddingXL),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Title
+                    Text(
+                      task.title,
+                      style: const TextStyle(
+                        fontSize: AppSizes.fontXL,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textDark,
+                      ),
+                    ),
+                    const SizedBox(height: AppSizes.spaceM),
+
+                    // Status badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSizes.paddingM,
+                        vertical: AppSizes.paddingS,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isCompleted
+                            ? AppColors.successGreen.withOpacity(0.1)
+                            : isSkipped
+                            ? AppColors.warningOrange.withOpacity(0.1)
+                            : AppColors.primaryBlue.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                        border: Border.all(
+                          color: isCompleted
+                              ? AppColors.successGreen
+                              : isSkipped
+                              ? AppColors.warningOrange
+                              : AppColors.primaryBlue,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            isCompleted
+                                ? Icons.check_circle
+                                : isSkipped
+                                ? Icons.cancel
+                                : Icons.pending,
+                            size: AppSizes.iconS,
+                            color: isCompleted
+                                ? AppColors.successGreen
+                                : isSkipped
+                                ? AppColors.warningOrange
+                                : AppColors.primaryBlue,
+                          ),
+                          const SizedBox(width: AppSizes.spaceXS),
+                          Text(
+                            isCompleted
+                                ? 'Completed'
+                                : isSkipped
+                                ? 'Skipped'
+                                : 'Pending',
+                            style: TextStyle(
+                              fontSize: AppSizes.fontM,
+                              fontWeight: FontWeight.w600,
+                              color: isCompleted
+                                  ? AppColors.successGreen
+                                  : isSkipped
+                                  ? AppColors.warningOrange
+                                  : AppColors.primaryBlue,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: AppSizes.spaceL),
+
+                    // Due Date
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(AppSizes.paddingS),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryBlue.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(
+                              AppSizes.radiusM,
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.calendar_today_rounded,
+                            size: AppSizes.iconM,
+                            color: AppColors.primaryBlue,
+                          ),
+                        ),
+                        const SizedBox(width: AppSizes.spaceM),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Due Date',
+                              style: TextStyle(
+                                fontSize: AppSizes.fontS,
+                                color: AppColors.textLight,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              DateFormat(
+                                'EEEE, MMMM d, yyyy',
+                              ).format(task.dueDate),
+                              style: const TextStyle(
+                                fontSize: AppSizes.fontM,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textDark,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+
+                    // Description
+                    if (task.description != null &&
+                        task.description!.isNotEmpty) ...[
+                      const SizedBox(height: AppSizes.spaceL),
+                      const Text(
+                        'Description',
+                        style: TextStyle(
+                          fontSize: AppSizes.fontL,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textDark,
+                        ),
+                      ),
+                      const SizedBox(height: AppSizes.spaceS),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(AppSizes.paddingL),
+                        decoration: BoxDecoration(
+                          color: AppColors.cardBackground,
+                          borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                          border: Border.all(
+                            color: AppColors.divider,
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          task.description!,
+                          style: const TextStyle(
+                            fontSize: AppSizes.fontM,
+                            color: AppColors.textDark,
+                            height: 1.5,
+                          ),
+                        ),
+                      ),
+                    ],
+
+                    const SizedBox(height: AppSizes.spaceXL),
+
+                    // Action button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          onToggle();
+                          Navigator.pop(context);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: isCompleted || isSkipped
+                              ? AppColors.primaryBlue
+                              : AppColors.successGreen,
+                          foregroundColor: AppColors.textWhite,
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSizes.paddingL,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppSizes.radiusM,
+                            ),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              isCompleted || isSkipped
+                                  ? Icons.refresh_rounded
+                                  : Icons.check_rounded,
+                              size: AppSizes.iconM,
+                            ),
+                            const SizedBox(width: AppSizes.spaceS),
+                            Text(
+                              isCompleted || isSkipped
+                                  ? 'Mark as Pending'
+                                  : 'Mark as Complete',
+                              style: const TextStyle(
+                                fontSize: AppSizes.fontL,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

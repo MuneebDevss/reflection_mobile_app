@@ -127,6 +127,10 @@ class _GoalCreationViewState extends ConsumerState<GoalCreationView> {
                 return ChatMessageBubble(
                   message: state.messages[index],
                   index: index,
+                  onSuggestionTap: (suggestion) {
+                    _textController.text = suggestion;
+                    _handleSubmit();
+                  },
                 );
               },
             ),
